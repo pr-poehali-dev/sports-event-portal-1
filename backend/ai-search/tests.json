@@ -1,0 +1,13 @@
+{
+  "tests": [
+    {
+      "name": "Поиск секции для ребёнка",
+      "method": "POST",
+      "path": "/",
+      "body": {"query": "секция для ребёнка 10 лет"},
+      "expectedStatus": 200,
+      "expectedBody": {"answer": "string"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

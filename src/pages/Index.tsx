@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Icon from "@/components/ui/icon";
+
+const AI_SEARCH_URL = "https://functions.poehali.dev/eff3cff9-2897-4b41-b095-1e3f66a4225b";
 
 const HERO_IMAGE = "https://cdn.poehali.dev/projects/fd2b00d0-b53b-4b0a-9771-f09c64c288ae/files/1b9c42c1-8fb7-4e11-928b-692de0886e8b.jpg";
 
@@ -54,6 +56,45 @@ export default function Index() {
   const [filterAge, setFilterAge] = useState("Любой возраст");
   const [filterLevel, setFilterLevel] = useState("Любой уровень");
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchResult, setSearchResult] = useState<null | {
+    answer: string;
+    events: typeof EVENTS;
+    sections: typeof SECTIONS;
+    trainers: typeof TRAINERS;
+  }>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setSearchLoading(true);
+    setSearchResult(null);
+    try {
+      const res = await fetch(AI_SEARCH_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: searchQuery }),
+      });
+      const data = await res.json();
+      setSearchResult(data);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const openSearch = () => {
+    setSearchOpen(true);
+    setTimeout(() => inputRef.current?.focus(), 100);
+  };
+
+  const closeSearch = () => {
+    setSearchOpen(false);
+    setSearchQuery("");
+    setSearchResult(null);
+  };
+
   const filteredEvents = EVENTS.filter(e => {
     if (filterSport !== "Все виды" && e.sport !== filterSport) return false;
     if (filterAge !== "Любой возраст" && e.age !== filterAge) return false;
@@ -95,6 +136,13 @@ export default function Index() {
             ))}
           </div>
 
+          <button
+            onClick={openSearch}
+            className="flex items-center gap-2 border border-sdv-border hover:border-sdv-red/50 bg-sdv-surface px-3 py-2 rounded-sm transition-all group mr-2"
+          >
+            <Icon name="Sparkles" size={14} className="text-sdv-red" />
+            <span className="font-body text-sdv-muted group-hover:text-sdv-light text-sm hidden sm:block">Поиск с ИИ</span>
+          </button>
           <button className="bg-sdv-red hover:bg-sdv-orange transition-colors px-4 py-2 font-display text-sm font-medium text-white rounded-sm tracking-wider uppercase">
             Записаться
           </button>
@@ -292,6 +340,156 @@ export default function Index() {
           </div>
         </div>
       </footer>
+
+      {/* AI SEARCH OVERLAY */}
+      {searchOpen && (
+        <div
+          className="fixed inset-0 z-[60] bg-sdv-darker/80 backdrop-blur-sm flex items-start justify-center pt-20 px-4"
+          onClick={e => { if (e.target === e.currentTarget) closeSearch(); }}
+        >
+          <div className="w-full max-w-2xl bg-sdv-card border border-sdv-border rounded-sm shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-sdv-border">
+              <Icon name="Sparkles" size={18} className="text-sdv-red shrink-0" />
+              <input
+                ref={inputRef}
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleSearch()}
+                placeholder="Например: секция для ребёнка 8 лет, соревнования по плаванию…"
+                className="flex-1 bg-transparent font-body text-sdv-light placeholder:text-sdv-muted text-base focus:outline-none"
+              />
+              <button
+                onClick={handleSearch}
+                disabled={searchLoading || !searchQuery.trim()}
+                className="bg-sdv-red hover:bg-sdv-orange disabled:opacity-40 disabled:cursor-not-allowed transition-colors px-4 py-1.5 font-display text-xs font-medium text-white uppercase tracking-wider rounded-sm shrink-0"
+              >
+                {searchLoading ? "Ищу…" : "Найти"}
+              </button>
+              <button onClick={closeSearch} className="text-sdv-muted hover:text-sdv-light transition-colors ml-1">
+                <Icon name="X" size={18} />
+              </button>
+            </div>
+
+            {/* Loading */}
+            {searchLoading && (
+              <div className="px-5 py-8 text-center">
+                <div className="inline-flex items-center gap-3 text-sdv-muted font-body text-sm">
+                  <div className="w-4 h-4 border-2 border-sdv-red border-t-transparent rounded-full animate-spin" />
+                  ИИ анализирует каталог…
+                </div>
+              </div>
+            )}
+
+            {/* Results */}
+            {searchResult && !searchLoading && (
+              <div className="max-h-[60vh] overflow-y-auto">
+                {/* Answer */}
+                <div className="px-5 py-4 bg-sdv-red/5 border-b border-sdv-border flex items-start gap-3">
+                  <Icon name="Sparkles" size={15} className="text-sdv-red mt-0.5 shrink-0" />
+                  <p className="font-body text-sdv-light text-sm leading-relaxed">{searchResult.answer}</p>
+                </div>
+
+                {/* Events */}
+                {searchResult.events.length > 0 && (
+                  <div className="px-5 py-4 border-b border-sdv-border">
+                    <p className="font-display text-xs uppercase tracking-wider text-sdv-muted mb-3">События</p>
+                    <div className="space-y-2">
+                      {searchResult.events.map(e => (
+                        <div key={e.id} className="flex items-center justify-between bg-sdv-surface rounded-sm px-4 py-3">
+                          <div>
+                            <p className="font-body font-medium text-sdv-light text-sm">{e.title}</p>
+                            <p className="font-body text-sdv-muted text-xs mt-0.5">{e.date} · {e.place}</p>
+                          </div>
+                          <span className="font-body text-xs text-sdv-orange ml-4 shrink-0">{e.sport}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sections */}
+                {searchResult.sections.length > 0 && (
+                  <div className="px-5 py-4 border-b border-sdv-border">
+                    <p className="font-display text-xs uppercase tracking-wider text-sdv-muted mb-3">Секции</p>
+                    <div className="space-y-2">
+                      {searchResult.sections.map(s => (
+                        <div key={s.id} className="flex items-center justify-between bg-sdv-surface rounded-sm px-4 py-3">
+                          <div>
+                            <p className="font-body font-medium text-sdv-light text-sm">{s.sport}</p>
+                            <p className="font-body text-sdv-muted text-xs mt-0.5">{s.schedule} · {s.age}</p>
+                          </div>
+                          <div className="flex items-center gap-1.5 ml-4 shrink-0">
+                            <div className={`w-1.5 h-1.5 rounded-full ${s.slots <= 5 ? "bg-sdv-orange" : "bg-green-400"}`} />
+                            <span className="font-body text-xs text-sdv-muted">{s.slots} мест</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Trainers */}
+                {searchResult.trainers.length > 0 && (
+                  <div className="px-5 py-4">
+                    <p className="font-display text-xs uppercase tracking-wider text-sdv-muted mb-3">Тренеры</p>
+                    <div className="space-y-2">
+                      {searchResult.trainers.map(t => (
+                        <div key={t.id} className="flex items-center gap-3 bg-sdv-surface rounded-sm px-4 py-3">
+                          <div className="w-8 h-8 rounded-sm flex items-center justify-center shrink-0 text-white font-display font-bold text-sm" style={{ background: "linear-gradient(135deg, #E8311A, #FF6B2C)" }}>
+                            {t.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                          </div>
+                          <div>
+                            <p className="font-body font-medium text-sdv-light text-sm">{t.name}</p>
+                            <p className="font-body text-sdv-muted text-xs">{t.sport} · {t.rank}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {searchResult.events.length === 0 && searchResult.sections.length === 0 && searchResult.trainers.length === 0 && (
+                  <div className="px-5 py-8 text-center">
+                    <Icon name="SearchX" size={32} className="text-sdv-border mx-auto mb-3" />
+                    <p className="font-body text-sdv-muted text-sm">Попробуйте другой запрос</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Hint */}
+            {!searchResult && !searchLoading && (
+              <div className="px-5 py-5 flex flex-wrap gap-2">
+                {["Секция для ребёнка 10 лет", "Соревнования по плаванию", "Тренер по самбо", "Нормативы МС"].map(hint => (
+                  <button
+                    key={hint}
+                    onClick={async () => {
+                      setSearchQuery(hint);
+                      setSearchLoading(true);
+                      setSearchResult(null);
+                      try {
+                        const res = await fetch(AI_SEARCH_URL, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ query: hint }),
+                        });
+                        const data = await res.json();
+                        setSearchResult(data);
+                      } finally {
+                        setSearchLoading(false);
+                      }
+                    }}
+                    className="font-body text-xs text-sdv-muted border border-sdv-border hover:border-sdv-red/40 hover:text-sdv-light px-3 py-1.5 rounded-sm transition-all"
+                  >
+                    {hint}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
