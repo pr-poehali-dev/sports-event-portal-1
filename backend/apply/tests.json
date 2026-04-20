@@ -1,0 +1,21 @@
+{
+  "tests": [
+    {
+      "name": "Подать заявку на событие",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "type": "event",
+        "target_name": "Первенство Перми по лёгкой атлетике",
+        "full_name": "Иванов Иван Иванович",
+        "phone": "+7 (342) 123-45-67",
+        "email": "test@example.com",
+        "birthdate": "2005-03-15",
+        "comment": "Тестовая заявка"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {"success": true},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

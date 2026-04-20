@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import Icon from "@/components/ui/icon";
 
 const AI_SEARCH_URL = "https://functions.poehali.dev/eff3cff9-2897-4b41-b095-1e3f66a4225b";
+const APPLY_URL = "https://functions.poehali.dev/6988e85c-9e01-4049-930b-9ebcf6554322";
 
 const HERO_IMAGE = "https://cdn.poehali.dev/projects/fd2b00d0-b53b-4b0a-9771-f09c64c288ae/files/1b9c42c1-8fb7-4e11-928b-692de0886e8b.jpg";
 
@@ -183,6 +184,43 @@ export default function Index() {
   const [filterSport, setFilterSport] = useState("Все виды");
   const [filterAge, setFilterAge] = useState("Любой возраст");
   const [filterLevel, setFilterLevel] = useState("Любой уровень");
+
+  const [applyTarget, setApplyTarget] = useState<{ type: "event" | "section"; id: number; name: string } | null>(null);
+  const [applyForm, setApplyForm] = useState({ full_name: "", phone: "", email: "", birthdate: "", comment: "" });
+  const [applyLoading, setApplyLoading] = useState(false);
+  const [applySuccess, setApplySuccess] = useState(false);
+
+  const openApply = (type: "event" | "section", id: number, name: string) => {
+    setApplyTarget({ type, id, name });
+    setApplyForm({ full_name: "", phone: "", email: "", birthdate: "", comment: "" });
+    setApplySuccess(false);
+  };
+
+  const closeApply = () => { setApplyTarget(null); setApplySuccess(false); };
+
+  const submitApply = async () => {
+    if (!applyTarget || !applyForm.full_name.trim() || !applyForm.phone.trim()) return;
+    setApplyLoading(true);
+    try {
+      const res = await fetch(APPLY_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: applyTarget.type,
+          target_name: applyTarget.name,
+          full_name: applyForm.full_name,
+          phone: applyForm.phone,
+          email: applyForm.email,
+          birthdate: applyForm.birthdate,
+          comment: applyForm.comment,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) setApplySuccess(true);
+    } finally {
+      setApplyLoading(false);
+    }
+  };
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
@@ -392,7 +430,7 @@ export default function Index() {
             <SectionHeader title="СОБЫТИЯ" subtitle="Предстоящие соревнования и турниры" count={filteredEvents.length} />
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
               {filteredEvents.map((event, i) => (
-                <EventCard key={event.id} event={event} delay={i * 0.05} />
+                <EventCard key={event.id} event={event} delay={i * 0.05} onApply={() => openApply("event", event.id, event.title)} />
               ))}
               {filteredEvents.length === 0 && <EmptyState />}
             </div>
@@ -404,7 +442,7 @@ export default function Index() {
             <SectionHeader title="СЕКЦИИ" subtitle="Запишитесь в спортивную секцию" count={filteredSections.length} />
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
               {filteredSections.map((section, i) => (
-                <SectionCard key={section.id} section={section} delay={i * 0.05} />
+                <SectionCard key={section.id} section={section} delay={i * 0.05} onApply={() => openApply("section", section.id, section.sport)} />
               ))}
               {filteredSections.length === 0 && <EmptyState />}
             </div>
@@ -636,6 +674,118 @@ export default function Index() {
           </div>
         </div>
       )}
+
+      {/* APPLY MODAL */}
+      {applyTarget && (
+        <div
+          className="fixed inset-0 z-[70] bg-sdv-darker/85 backdrop-blur-sm flex items-center justify-center px-4"
+          onClick={e => { if (e.target === e.currentTarget) closeApply(); }}
+        >
+          <div className="w-full max-w-md bg-sdv-card border border-sdv-border rounded-sm shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-start justify-between px-6 py-5 border-b border-sdv-border">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-sdv-red" />
+                  <span className="font-body text-sdv-orange text-xs uppercase tracking-wide">
+                    {applyTarget.type === "event" ? "Событие" : "Секция"}
+                  </span>
+                </div>
+                <h3 className="font-display font-bold text-white text-xl leading-tight">{applyTarget.name}</h3>
+              </div>
+              <button onClick={closeApply} className="text-sdv-muted hover:text-sdv-light transition-colors mt-1">
+                <Icon name="X" size={18} />
+              </button>
+            </div>
+
+            {applySuccess ? (
+              <div className="px-6 py-10 text-center">
+                <div className="w-14 h-14 bg-green-500/10 border border-green-500/20 rounded-sm flex items-center justify-center mx-auto mb-4">
+                  <Icon name="CheckCircle" size={28} className="text-green-400" />
+                </div>
+                <h4 className="font-display font-bold text-white text-xl mb-2">Заявка принята!</h4>
+                <p className="font-body text-sdv-muted text-sm">Мы свяжемся с вами по указанному номеру телефона.</p>
+                <button
+                  onClick={closeApply}
+                  className="mt-6 bg-sdv-red hover:bg-sdv-orange transition-colors px-6 py-2.5 font-display text-sm font-medium text-white uppercase tracking-wider rounded-sm"
+                >
+                  Отлично
+                </button>
+              </div>
+            ) : (
+              <div className="px-6 py-5 space-y-4">
+                <div>
+                  <label className="font-body text-sdv-muted text-xs uppercase tracking-wide block mb-1.5">Имя и фамилия *</label>
+                  <input
+                    value={applyForm.full_name}
+                    onChange={e => setApplyForm(f => ({ ...f, full_name: e.target.value }))}
+                    placeholder="Иванов Иван Иванович"
+                    className="w-full bg-sdv-surface border border-sdv-border focus:border-sdv-red/50 text-sdv-light font-body text-sm px-4 py-2.5 rounded-sm focus:outline-none transition-colors placeholder:text-sdv-muted/50"
+                  />
+                </div>
+                <div>
+                  <label className="font-body text-sdv-muted text-xs uppercase tracking-wide block mb-1.5">Телефон *</label>
+                  <input
+                    value={applyForm.phone}
+                    onChange={e => setApplyForm(f => ({ ...f, phone: e.target.value }))}
+                    placeholder="+7 (342) ___-__-__"
+                    className="w-full bg-sdv-surface border border-sdv-border focus:border-sdv-red/50 text-sdv-light font-body text-sm px-4 py-2.5 rounded-sm focus:outline-none transition-colors placeholder:text-sdv-muted/50"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-body text-sdv-muted text-xs uppercase tracking-wide block mb-1.5">Email</label>
+                    <input
+                      value={applyForm.email}
+                      onChange={e => setApplyForm(f => ({ ...f, email: e.target.value }))}
+                      placeholder="mail@example.com"
+                      className="w-full bg-sdv-surface border border-sdv-border focus:border-sdv-red/50 text-sdv-light font-body text-sm px-4 py-2.5 rounded-sm focus:outline-none transition-colors placeholder:text-sdv-muted/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-body text-sdv-muted text-xs uppercase tracking-wide block mb-1.5">Дата рождения</label>
+                    <input
+                      type="date"
+                      value={applyForm.birthdate}
+                      onChange={e => setApplyForm(f => ({ ...f, birthdate: e.target.value }))}
+                      className="w-full bg-sdv-surface border border-sdv-border focus:border-sdv-red/50 text-sdv-light font-body text-sm px-4 py-2.5 rounded-sm focus:outline-none transition-colors"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="font-body text-sdv-muted text-xs uppercase tracking-wide block mb-1.5">Комментарий</label>
+                  <textarea
+                    value={applyForm.comment}
+                    onChange={e => setApplyForm(f => ({ ...f, comment: e.target.value }))}
+                    placeholder="Дополнительная информация..."
+                    rows={2}
+                    className="w-full bg-sdv-surface border border-sdv-border focus:border-sdv-red/50 text-sdv-light font-body text-sm px-4 py-2.5 rounded-sm focus:outline-none transition-colors resize-none placeholder:text-sdv-muted/50"
+                  />
+                </div>
+                <div className="flex gap-3 pt-1 pb-1">
+                  <button
+                    onClick={closeApply}
+                    className="flex-1 border border-sdv-border hover:border-sdv-red/30 text-sdv-muted hover:text-sdv-light transition-all py-2.5 font-display text-xs font-medium uppercase tracking-wider rounded-sm"
+                  >
+                    Отмена
+                  </button>
+                  <button
+                    onClick={submitApply}
+                    disabled={applyLoading || !applyForm.full_name.trim() || !applyForm.phone.trim()}
+                    className="flex-1 bg-sdv-red hover:bg-sdv-orange disabled:opacity-40 disabled:cursor-not-allowed transition-colors py-2.5 font-display text-xs font-medium text-white uppercase tracking-wider rounded-sm flex items-center justify-center gap-2"
+                  >
+                    {applyLoading ? (
+                      <><div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Отправка…</>
+                    ) : (
+                      <><Icon name="Send" size={13} /> Подать заявку</>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -657,7 +807,7 @@ function SectionHeader({ title, subtitle, count }: { title: string; subtitle: st
   );
 }
 
-function EventCard({ event, delay }: { event: typeof EVENTS[0]; delay: number }) {
+function EventCard({ event, delay, onApply }: { event: typeof EVENTS[0]; delay: number; onApply: () => void }) {
   const badgeColors: Record<string, string> = {
     "Скоро": "text-sdv-orange border-sdv-orange/30 bg-sdv-orange/10",
     "Регистрация": "text-green-400 border-green-400/30 bg-green-400/10",
@@ -692,14 +842,17 @@ function EventCard({ event, delay }: { event: typeof EVENTS[0]; delay: number })
           {event.age} · {event.level}
         </div>
       </div>
-      <button className="w-full bg-sdv-surface border border-sdv-border hover:border-sdv-red hover:bg-sdv-red/5 transition-all py-2 font-display text-xs font-medium text-sdv-light uppercase tracking-wider rounded-sm">
+      <button
+        onClick={onApply}
+        className="w-full bg-sdv-surface border border-sdv-border hover:border-sdv-red hover:bg-sdv-red/5 transition-all py-2 font-display text-xs font-medium text-sdv-light uppercase tracking-wider rounded-sm"
+      >
         Подать заявку
       </button>
     </div>
   );
 }
 
-function SectionCard({ section, delay }: { section: typeof SECTIONS[0]; delay: number }) {
+function SectionCard({ section, delay, onApply }: { section: typeof SECTIONS[0]; delay: number; onApply: () => void }) {
   return (
     <div
       className="bg-sdv-card border border-sdv-border rounded-sm p-5 cursor-pointer group transition-all duration-300 hover:-translate-y-1 hover:border-sdv-red/30"
@@ -731,7 +884,10 @@ function SectionCard({ section, delay }: { section: typeof SECTIONS[0]; delay: n
           <div className={`w-2 h-2 rounded-full ${section.slots <= 5 ? "bg-sdv-orange" : "bg-green-400"}`} />
           <span className="font-body text-xs text-sdv-muted">{section.slots} мест свободно</span>
         </div>
-        <button className="bg-sdv-red hover:bg-sdv-orange transition-colors px-4 py-1.5 font-display text-xs font-medium text-white uppercase tracking-wider rounded-sm">
+        <button
+          onClick={onApply}
+          className="bg-sdv-red hover:bg-sdv-orange transition-colors px-4 py-1.5 font-display text-xs font-medium text-white uppercase tracking-wider rounded-sm"
+        >
           Записаться
         </button>
       </div>
