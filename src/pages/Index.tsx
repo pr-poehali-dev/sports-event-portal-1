@@ -5,7 +5,88 @@ const AI_SEARCH_URL = "https://functions.poehali.dev/eff3cff9-2897-4b41-b095-1e3
 
 const HERO_IMAGE = "https://cdn.poehali.dev/projects/fd2b00d0-b53b-4b0a-9771-f09c64c288ae/files/1b9c42c1-8fb7-4e11-928b-692de0886e8b.jpg";
 
-const NAV_ITEMS = ["События", "Секции", "Тренеры", "Нормативы"];
+const NAV_ITEMS = ["События", "Секции", "Тренеры", "Нормативы", "Карта"];
+
+const VENUES = [
+  {
+    id: 1,
+    name: "Стадион Динамо",
+    type: "Стадион",
+    address: "ул. Ленина, 45",
+    sports: ["Лёгкая атлетика", "Футбол"],
+    capacity: 5000,
+    phone: "+7 (495) 123-45-67",
+    hours: "Пн–Вс · 8:00–22:00",
+    lat: 55.762,
+    lon: 37.621,
+    events: 4,
+  },
+  {
+    id: 2,
+    name: "Бассейн Олимпийский",
+    type: "Бассейн",
+    address: "пр. Победы, 12",
+    sports: ["Плавание", "Водное поло"],
+    capacity: 800,
+    phone: "+7 (495) 234-56-78",
+    hours: "Пн–Сб · 7:00–21:00",
+    lat: 55.758,
+    lon: 37.610,
+    events: 2,
+  },
+  {
+    id: 3,
+    name: "СК Спартак",
+    type: "Спорткомплекс",
+    address: "ул. Спортивная, 8",
+    sports: ["Самбо", "Дзюдо", "Борьба"],
+    capacity: 600,
+    phone: "+7 (495) 345-67-89",
+    hours: "Пн–Пт · 9:00–21:00",
+    lat: 55.770,
+    lon: 37.635,
+    events: 3,
+  },
+  {
+    id: 4,
+    name: "Дворец спорта",
+    type: "Дворец спорта",
+    address: "Спортивный бульвар, 3",
+    sports: ["Гимнастика", "Фигурное катание", "Теннис"],
+    capacity: 3000,
+    phone: "+7 (495) 456-78-90",
+    hours: "Пн–Вс · 9:00–22:00",
+    lat: 55.752,
+    lon: 37.598,
+    events: 5,
+  },
+  {
+    id: 5,
+    name: "СК Олимп",
+    type: "Спорткомплекс",
+    address: "ул. Чемпионов, 21",
+    sports: ["Тяжёлая атлетика", "Пауэрлифтинг"],
+    capacity: 400,
+    phone: "+7 (495) 567-89-01",
+    hours: "Пн–Пт · 8:00–20:00",
+    lat: 55.745,
+    lon: 37.644,
+    events: 2,
+  },
+  {
+    id: 6,
+    name: "Городской парк",
+    type: "Открытая площадка",
+    address: "Парковая аллея, 1",
+    sports: ["Лёгкая атлетика", "Велоспорт", "Скейтбординг"],
+    capacity: 10000,
+    phone: "+7 (495) 678-90-12",
+    hours: "Круглосуточно",
+    lat: 55.775,
+    lon: 37.615,
+    events: 3,
+  },
+];
 
 const EVENTS = [
   { id: 1, title: "Первенство города по лёгкой атлетике", sport: "Лёгкая атлетика", date: "15 мая 2026", place: "Стадион Динамо", level: "Городской", age: "14–17 лет", badge: "Скоро" },
@@ -292,6 +373,10 @@ export default function Index() {
               ))}
             </div>
           </div>
+        )}
+
+        {activeSection === "Карта" && (
+          <MapSection />
         )}
 
         {activeSection === "Нормативы" && (
@@ -646,6 +731,179 @@ function EmptyState() {
       <Icon name="SearchX" size={40} className="text-sdv-border mx-auto mb-4" />
       <p className="font-display text-sdv-muted text-lg">Ничего не найдено</p>
       <p className="font-body text-sdv-muted/60 text-sm mt-1">Попробуйте изменить фильтры</p>
+    </div>
+  );
+}
+
+const VENUE_TYPE_ICONS: Record<string, string> = {
+  "Стадион": "Trophy",
+  "Бассейн": "Waves",
+  "Спорткомплекс": "Building2",
+  "Дворец спорта": "Star",
+  "Открытая площадка": "Trees",
+};
+
+function MapSection() {
+  const [selected, setSelected] = useState<typeof VENUES[0] | null>(null);
+  const [filter, setFilter] = useState("Все");
+  const types = ["Все", ...Array.from(new Set(VENUES.map(v => v.type)))];
+  const filtered = filter === "Все" ? VENUES : VENUES.filter(v => v.type === filter);
+
+  // Центр карты — Москва (можно заменить на любой город)
+  const centerLat = 55.758;
+  const centerLon = 37.621;
+
+  const mapUrl = `https://yandex.ru/map-widget/v1/?ll=${centerLon}%2C${centerLat}&z=13&l=map&${
+    VENUES.map(v => `pt=${v.lon}%2C${v.lat}%2Cpm2rdm`).join("~")
+  }`;
+
+  return (
+    <div>
+      <SectionHeader title="КАРТА" subtitle="Спорткомплексы и площадки проведения мероприятий" count={filtered.length} />
+
+      {/* Type filter */}
+      <div className="flex flex-wrap gap-2 mt-6">
+        {types.map(t => (
+          <button
+            key={t}
+            onClick={() => setFilter(t)}
+            className={`font-body text-xs px-3 py-1.5 rounded-sm border transition-all ${
+              filter === t
+                ? "border-sdv-red bg-sdv-red/10 text-sdv-red"
+                : "border-sdv-border text-sdv-muted hover:border-sdv-red/40 hover:text-sdv-light"
+            }`}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Venue list */}
+        <div className="lg:col-span-1 space-y-3 max-h-[560px] overflow-y-auto pr-1">
+          {filtered.map(venue => (
+            <button
+              key={venue.id}
+              onClick={() => setSelected(selected?.id === venue.id ? null : venue)}
+              className={`w-full text-left bg-sdv-card border rounded-sm p-4 transition-all duration-200 ${
+                selected?.id === venue.id
+                  ? "border-sdv-red sdv-glow"
+                  : "border-sdv-border hover:border-sdv-red/40"
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <div className={`w-9 h-9 rounded-sm flex items-center justify-center shrink-0 ${
+                  selected?.id === venue.id ? "bg-sdv-red" : "bg-sdv-red/10"
+                }`}>
+                  <Icon
+                    name={VENUE_TYPE_ICONS[venue.type] as "Trophy"}
+                    size={16}
+                    className={selected?.id === venue.id ? "text-white" : "text-sdv-red"}
+                    fallback="MapPin"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-display font-semibold text-sdv-light text-sm">{venue.name}</p>
+                  <p className="font-body text-sdv-muted text-xs mt-0.5">{venue.address}</p>
+                  <div className="flex items-center gap-3 mt-2">
+                    <span className="font-body text-xs text-sdv-orange">{venue.type}</span>
+                    <span className="font-body text-xs text-sdv-muted">{venue.events} событий</span>
+                  </div>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* Map + detail */}
+        <div className="lg:col-span-2 flex flex-col gap-4">
+          {/* Yandex map embed */}
+          <div className="relative rounded-sm overflow-hidden border border-sdv-border" style={{ height: selected ? "320px" : "460px" }}>
+            <iframe
+              src={mapUrl}
+              width="100%"
+              height="100%"
+              frameBorder="0"
+              allowFullScreen
+              className="w-full h-full"
+              title="Карта спортивных объектов"
+            />
+            <div className="absolute top-3 left-3 bg-sdv-darker/80 backdrop-blur border border-sdv-border rounded-sm px-3 py-1.5 flex items-center gap-2">
+              <Icon name="MapPin" size={12} className="text-sdv-red" />
+              <span className="font-body text-sdv-light text-xs">{VENUES.length} объектов</span>
+            </div>
+          </div>
+
+          {/* Selected venue detail */}
+          {selected && (
+            <div className="bg-sdv-card border border-sdv-red/30 rounded-sm p-5 animate-fade-in">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-body text-xs text-sdv-orange uppercase tracking-wide">{selected.type}</span>
+                    <span className="w-1 h-1 rounded-full bg-sdv-border" />
+                    <span className="font-body text-xs text-sdv-muted">{selected.events} событий</span>
+                  </div>
+                  <h3 className="font-display font-bold text-white text-2xl">{selected.name}</h3>
+                  <p className="font-body text-sdv-muted text-sm mt-1">{selected.address}</p>
+                </div>
+                <button onClick={() => setSelected(null)} className="text-sdv-muted hover:text-sdv-light transition-colors shrink-0">
+                  <Icon name="X" size={18} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-5">
+                <div className="flex items-start gap-2">
+                  <Icon name="Clock" size={14} className="text-sdv-red mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-body text-sdv-muted text-xs uppercase tracking-wide">Режим работы</p>
+                    <p className="font-body text-sdv-light text-sm mt-0.5">{selected.hours}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Icon name="Phone" size={14} className="text-sdv-red mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-body text-sdv-muted text-xs uppercase tracking-wide">Телефон</p>
+                    <p className="font-body text-sdv-light text-sm mt-0.5">{selected.phone}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Icon name="Users" size={14} className="text-sdv-red mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-body text-sdv-muted text-xs uppercase tracking-wide">Вместимость</p>
+                    <p className="font-body text-sdv-light text-sm mt-0.5">{selected.capacity.toLocaleString()} чел.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <p className="font-body text-sdv-muted text-xs uppercase tracking-wide mb-2">Виды спорта</p>
+                <div className="flex flex-wrap gap-2">
+                  {selected.sports.map(s => (
+                    <span key={s} className="font-body text-xs text-sdv-light bg-sdv-surface border border-sdv-border px-2.5 py-1 rounded-sm">{s}</span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-4 flex gap-2">
+                <a
+                  href={`https://yandex.ru/maps/?text=${encodeURIComponent(selected.name + " " + selected.address)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 bg-sdv-red hover:bg-sdv-orange transition-colors px-4 py-2 font-display text-xs font-medium text-white uppercase tracking-wider rounded-sm"
+                >
+                  <Icon name="Navigation" size={13} />
+                  Маршрут
+                </a>
+                <button className="flex items-center gap-2 border border-sdv-border hover:border-sdv-red/50 px-4 py-2 font-display text-xs font-medium text-sdv-light uppercase tracking-wider rounded-sm transition-all">
+                  <Icon name="Calendar" size={13} />
+                  События здесь
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
