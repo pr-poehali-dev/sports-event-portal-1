@@ -1,14 +1,439 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from "react";
+import Icon from "@/components/ui/icon";
 
-const Index = () => {
+const HERO_IMAGE = "https://cdn.poehali.dev/projects/fd2b00d0-b53b-4b0a-9771-f09c64c288ae/files/1b9c42c1-8fb7-4e11-928b-692de0886e8b.jpg";
+
+const NAV_ITEMS = ["События", "Секции", "Тренеры", "Нормативы"];
+
+const EVENTS = [
+  { id: 1, title: "Первенство города по лёгкой атлетике", sport: "Лёгкая атлетика", date: "15 мая 2026", place: "Стадион Динамо", level: "Городской", age: "14–17 лет", badge: "Скоро" },
+  { id: 2, title: "Открытый турнир по плаванию «Волна»", sport: "Плавание", date: "22 мая 2026", place: "Бассейн Олимпийский", level: "Региональный", age: "10–14 лет", badge: "Регистрация" },
+  { id: 3, title: "Чемпионат по борьбе самбо", sport: "Самбо", date: "1 июня 2026", place: "СК Спартак", level: "Областной", age: "18+ лет", badge: "Регистрация" },
+  { id: 4, title: "Кубок по художественной гимнастике", sport: "Гимнастика", date: "8 июня 2026", place: "Дворец спорта", level: "Городской", age: "8–12 лет", badge: "Скоро" },
+  { id: 5, title: "Соревнования по тяжёлой атлетике", sport: "Тяжёлая атлетика", date: "14 июня 2026", place: "СК Олимп", level: "Региональный", age: "18+ лет", badge: "Открыт" },
+  { id: 6, title: "Детский забег «Бегущий город»", sport: "Лёгкая атлетика", date: "20 июня 2026", place: "Городской парк", level: "Городской", age: "6–12 лет", badge: "Открыт" },
+];
+
+const SECTIONS = [
+  { id: 1, sport: "Лёгкая атлетика", icon: "Zap", trainer: "Иванов А.В.", schedule: "Пн, Ср, Пт · 17:00", age: "10–18 лет", level: "Начинающие / Продвинутые", slots: 8 },
+  { id: 2, sport: "Плавание", icon: "Waves", trainer: "Петрова М.С.", schedule: "Вт, Чт, Сб · 9:00", age: "6–16 лет", level: "Все уровни", slots: 5 },
+  { id: 3, sport: "Самбо", icon: "Shield", trainer: "Соколов Д.П.", schedule: "Пн, Ср, Пт · 18:30", age: "12–25 лет", level: "Начинающие", slots: 12 },
+  { id: 4, sport: "Художественная гимнастика", icon: "Sparkles", trainer: "Козлова Е.Н.", schedule: "Вт, Чт · 16:00", age: "5–14 лет", level: "Начинающие", slots: 3 },
+  { id: 5, sport: "Тяжёлая атлетика", icon: "Dumbbell", trainer: "Морозов К.А.", schedule: "Пн–Пт · 10:00", age: "16+ лет", level: "Продвинутые", slots: 7 },
+  { id: 6, sport: "Баскетбол", icon: "Circle", trainer: "Лебедев С.В.", schedule: "Вт, Пт · 19:00", age: "12–20 лет", level: "Все уровни", slots: 15 },
+];
+
+const TRAINERS = [
+  { id: 1, name: "Алексей Иванов", sport: "Лёгкая атлетика", rank: "Мастер спорта России", exp: "14 лет", pupils: 47, wins: 23 },
+  { id: 2, name: "Мария Петрова", sport: "Плавание", rank: "КМС", exp: "9 лет", pupils: 32, wins: 11 },
+  { id: 3, name: "Дмитрий Соколов", sport: "Самбо", rank: "Заслуженный тренер", exp: "21 год", pupils: 68, wins: 41 },
+  { id: 4, name: "Екатерина Козлова", sport: "Гимнастика", rank: "Мастер спорта", exp: "12 лет", pupils: 28, wins: 16 },
+];
+
+const STANDARDS = [
+  { sport: "Лёгкая атлетика", norm: "Бег 100м", unit: "сек", kms: "12.0", ms: "10.8", zmr: "10.4" },
+  { sport: "Плавание", norm: "100м вольный", unit: "сек", kms: "62.0", ms: "54.0", zmr: "50.5" },
+  { sport: "Тяжёлая атлетика", norm: "Рывок 85 кг", unit: "кг", kms: "100", ms: "120", zmr: "140" },
+  { sport: "Самбо", norm: "Нормативы ОФП", unit: "очки", kms: "70", ms: "85", zmr: "95" },
+];
+
+const SPORTS = ["Все виды", "Лёгкая атлетика", "Плавание", "Самбо", "Гимнастика", "Тяжёлая атлетика", "Баскетбол"];
+const AGES = ["Любой возраст", "6–12 лет", "10–14 лет", "10–18 лет", "12–20 лет", "12–25 лет", "14–17 лет", "16+ лет", "18+ лет"];
+const LEVELS = ["Любой уровень", "Начинающие", "Продвинутые", "Все уровни", "Региональный", "Городской", "Областной"];
+
+const STATS = [
+  { value: "1 240", label: "Спортсменов" },
+  { value: "48", label: "Секций" },
+  { value: "32", label: "Тренеров" },
+  { value: "186", label: "Наград в сезоне" },
+];
+
+export default function Index() {
+  const [activeSection, setActiveSection] = useState("События");
+  const [filterSport, setFilterSport] = useState("Все виды");
+  const [filterAge, setFilterAge] = useState("Любой возраст");
+  const [filterLevel, setFilterLevel] = useState("Любой уровень");
+
+  const filteredEvents = EVENTS.filter(e => {
+    if (filterSport !== "Все виды" && e.sport !== filterSport) return false;
+    if (filterAge !== "Любой возраст" && e.age !== filterAge) return false;
+    return true;
+  });
+
+  const filteredSections = SECTIONS.filter(s => {
+    if (filterSport !== "Все виды" && s.sport !== filterSport) return false;
+    if (filterAge !== "Любой возраст" && s.age !== filterAge) return false;
+    if (filterLevel !== "Любой уровень" && s.level !== filterLevel) return false;
+    return true;
+  });
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4 color-black text-black">Добро пожаловать!</h1>
-        <p className="text-xl text-gray-600">тут будет отображаться ваш проект</p>
+    <div className="min-h-screen bg-sdv-darker text-sdv-light overflow-x-hidden">
+      {/* NAVIGATION */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-sdv-darker/90 backdrop-blur-md border-b border-sdv-border">
+        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-16">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-sdv-red rounded-sm flex items-center justify-center">
+              <span className="font-display font-bold text-white text-sm">СДВ</span>
+            </div>
+            <span className="font-display font-semibold text-white text-lg tracking-wide hidden sm:block">СПОРТ ДВИЖЕНИЕ ВПЕРЁД</span>
+          </div>
+
+          <div className="hidden md:flex items-center gap-1">
+            {NAV_ITEMS.map(item => (
+              <button
+                key={item}
+                onClick={() => setActiveSection(item)}
+                className={`px-4 py-2 font-display text-sm font-medium tracking-wider uppercase transition-all duration-200 rounded-sm ${
+                  activeSection === item
+                    ? "text-sdv-red bg-sdv-red/10"
+                    : "text-sdv-muted hover:text-sdv-light"
+                }`}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+
+          <button className="bg-sdv-red hover:bg-sdv-orange transition-colors px-4 py-2 font-display text-sm font-medium text-white rounded-sm tracking-wider uppercase">
+            Записаться
+          </button>
+        </div>
+
+        <div className="md:hidden flex gap-1 px-4 pb-3 overflow-x-auto">
+          {NAV_ITEMS.map(item => (
+            <button
+              key={item}
+              onClick={() => setActiveSection(item)}
+              className={`px-3 py-1.5 font-display text-xs font-medium tracking-wider uppercase whitespace-nowrap rounded-sm transition-all ${
+                activeSection === item ? "text-sdv-red bg-sdv-red/10" : "text-sdv-muted"
+              }`}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      {/* HERO */}
+      <section className="relative h-[90vh] min-h-[560px] flex items-end overflow-hidden" style={{ clipPath: "polygon(0 0, 100% 0, 100% 88%, 0 100%)" }}>
+        <img src={HERO_IMAGE} alt="СДВ" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-sdv-darker via-sdv-darker/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-sdv-darker/80 to-transparent" />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-6 pb-24 w-full">
+          <div className="max-w-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-0.5 bg-sdv-red" />
+              <span className="font-body text-sdv-orange text-sm font-medium tracking-widest uppercase">Официальная платформа</span>
+            </div>
+            <h1 className="font-display text-6xl sm:text-8xl font-bold text-white leading-none tracking-tight mb-4">
+              СПОРТ<br />
+              <span className="text-sdv-red">ДВИЖЕНИЕ</span><br />
+              ВПЕРЁД
+            </h1>
+            <p className="font-body text-sdv-muted text-lg leading-relaxed mb-8">
+              Все события, секции и тренеры вашего города — в одном месте.
+              Записывайтесь, участвуйте, побеждайте.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setActiveSection("События")}
+                className="bg-sdv-red hover:bg-sdv-orange transition-colors px-6 py-3 font-display font-medium text-white text-sm tracking-wider uppercase rounded-sm flex items-center gap-2"
+                style={{ boxShadow: "0 0 30px rgba(232,49,26,0.3)" }}
+              >
+                <Icon name="Calendar" size={16} />
+                Ближайшие события
+              </button>
+              <button
+                onClick={() => setActiveSection("Секции")}
+                className="border border-sdv-border hover:border-sdv-red/50 bg-sdv-surface/50 backdrop-blur transition-all px-6 py-3 font-display font-medium text-sdv-light text-sm tracking-wider uppercase rounded-sm flex items-center gap-2"
+              >
+                <Icon name="Users" size={16} />
+                Секции
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="absolute bottom-0 right-0 left-0 z-20">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="grid grid-cols-4 gap-px bg-sdv-border overflow-hidden rounded-t-sm">
+              {STATS.map((s, i) => (
+                <div key={i} className="bg-sdv-surface/95 backdrop-blur px-4 py-4 text-center">
+                  <div className="font-display text-2xl font-bold text-sdv-red">{s.value}</div>
+                  <div className="font-body text-xs text-sdv-muted mt-0.5 uppercase tracking-wide">{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FILTERS */}
+      <section className="bg-sdv-surface border-b border-sdv-border sticky top-16 z-40">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex flex-wrap gap-2 items-center">
+          <Icon name="SlidersHorizontal" size={16} className="text-sdv-muted mr-1" />
+          {[
+            { options: SPORTS, value: filterSport, setter: setFilterSport },
+            { options: AGES, value: filterAge, setter: setFilterAge },
+            { options: LEVELS, value: filterLevel, setter: setFilterLevel },
+          ].map((f, i) => (
+            <select
+              key={i}
+              value={f.value}
+              onChange={e => f.setter(e.target.value)}
+              className="bg-sdv-card border border-sdv-border text-sdv-light font-body text-sm px-3 py-1.5 rounded-sm focus:outline-none focus:border-sdv-red/50 cursor-pointer"
+            >
+              {f.options.map(opt => (
+                <option key={opt} value={opt} className="bg-sdv-card">{opt}</option>
+              ))}
+            </select>
+          ))}
+          {(filterSport !== "Все виды" || filterAge !== "Любой возраст" || filterLevel !== "Любой уровень") && (
+            <button
+              onClick={() => { setFilterSport("Все виды"); setFilterAge("Любой возраст"); setFilterLevel("Любой уровень"); }}
+              className="text-sdv-muted hover:text-sdv-red text-xs font-body flex items-center gap-1 transition-colors ml-1"
+            >
+              <Icon name="X" size={12} />
+              Сбросить
+            </button>
+          )}
+        </div>
+      </section>
+
+      <main className="max-w-7xl mx-auto px-6 py-12">
+
+        {activeSection === "События" && (
+          <div>
+            <SectionHeader title="СОБЫТИЯ" subtitle="Предстоящие соревнования и турниры" count={filteredEvents.length} />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
+              {filteredEvents.map((event, i) => (
+                <EventCard key={event.id} event={event} delay={i * 0.05} />
+              ))}
+              {filteredEvents.length === 0 && <EmptyState />}
+            </div>
+          </div>
+        )}
+
+        {activeSection === "Секции" && (
+          <div>
+            <SectionHeader title="СЕКЦИИ" subtitle="Запишитесь в спортивную секцию" count={filteredSections.length} />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
+              {filteredSections.map((section, i) => (
+                <SectionCard key={section.id} section={section} delay={i * 0.05} />
+              ))}
+              {filteredSections.length === 0 && <EmptyState />}
+            </div>
+          </div>
+        )}
+
+        {activeSection === "Тренеры" && (
+          <div>
+            <SectionHeader title="ТРЕНЕРЫ" subtitle="Профессиональный тренерский состав" count={TRAINERS.length} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-8">
+              {TRAINERS.map((trainer, i) => (
+                <TrainerCard key={trainer.id} trainer={trainer} delay={i * 0.07} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeSection === "Нормативы" && (
+          <div>
+            <SectionHeader title="НОРМАТИВЫ" subtitle="Требования для присвоения спортивных разрядов" />
+            <div className="mt-8 overflow-x-auto rounded-sm border border-sdv-border">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-sdv-surface">
+                    <th className="text-left px-5 py-3 font-display text-xs uppercase tracking-wider text-sdv-muted border-b border-sdv-border">Вид спорта</th>
+                    <th className="text-left px-5 py-3 font-display text-xs uppercase tracking-wider text-sdv-muted border-b border-sdv-border">Норматив</th>
+                    <th className="text-center px-5 py-3 font-display text-xs uppercase tracking-wider text-sdv-muted border-b border-sdv-border">КМС</th>
+                    <th className="text-center px-5 py-3 font-display text-xs uppercase tracking-wider text-sdv-orange border-b border-sdv-border">МС</th>
+                    <th className="text-center px-5 py-3 font-display text-xs uppercase tracking-wider text-sdv-red border-b border-sdv-border">ЗМС</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {STANDARDS.map((s, i) => (
+                    <tr key={i} className="border-b border-sdv-border/50 hover:bg-sdv-surface/50 transition-colors">
+                      <td className="px-5 py-4 font-body font-medium text-sdv-light text-sm">{s.sport}</td>
+                      <td className="px-5 py-4 font-body text-sdv-muted text-sm">{s.norm}</td>
+                      <td className="px-5 py-4 text-center font-display font-semibold text-sdv-light text-sm">{s.kms} <span className="text-sdv-muted font-body font-normal text-xs">{s.unit}</span></td>
+                      <td className="px-5 py-4 text-center font-display font-semibold text-sdv-orange text-sm">{s.ms} <span className="text-sdv-muted font-body font-normal text-xs">{s.unit}</span></td>
+                      <td className="px-5 py-4 text-center font-display font-semibold text-sdv-red text-sm">{s.zmr} <span className="text-sdv-muted font-body font-normal text-xs">{s.unit}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-6 p-5 bg-sdv-surface border border-sdv-border rounded-sm flex items-start gap-3">
+              <Icon name="Info" size={18} className="text-sdv-orange mt-0.5 shrink-0" />
+              <p className="font-body text-sdv-muted text-sm leading-relaxed">
+                Нормативы указаны для основной возрастной группы. Для уточнения разрядных требований по конкретному возрасту и весовой категории обратитесь к тренеру.
+              </p>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* FOOTER */}
+      <footer className="border-t border-sdv-border bg-sdv-surface mt-16">
+        <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 bg-sdv-red rounded-sm flex items-center justify-center">
+              <span className="font-display font-bold text-white text-[10px]">СДВ</span>
+            </div>
+            <span className="font-body text-sdv-muted text-sm">© 2026 Спорт Движение Вперёд. Все права защищены.</span>
+          </div>
+          <div className="flex gap-6">
+            {["О платформе", "Контакты", "Документы"].map(link => (
+              <button key={link} className="font-body text-sdv-muted hover:text-sdv-light text-sm transition-colors">{link}</button>
+            ))}
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+function SectionHeader({ title, subtitle, count }: { title: string; subtitle: string; count?: number }) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+      <div>
+        <h2 className="font-display text-4xl font-bold text-white tracking-tight">{title}</h2>
+        <p className="font-body text-sdv-muted text-base mt-1">{subtitle}</p>
+      </div>
+      {count !== undefined && (
+        <div className="text-right">
+          <span className="font-display text-3xl font-bold text-sdv-red">{count}</span>
+          <span className="font-body text-sdv-muted text-sm ml-2">найдено</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EventCard({ event, delay }: { event: typeof EVENTS[0]; delay: number }) {
+  const badgeColors: Record<string, string> = {
+    "Скоро": "text-sdv-orange border-sdv-orange/30 bg-sdv-orange/10",
+    "Регистрация": "text-green-400 border-green-400/30 bg-green-400/10",
+    "Открыт": "text-blue-400 border-blue-400/30 bg-blue-400/10",
+  };
+
+  return (
+    <div
+      className="bg-sdv-card border border-sdv-border rounded-sm p-5 cursor-pointer group transition-all duration-300 hover:-translate-y-1 hover:border-sdv-red/30"
+      style={{ animationDelay: `${delay}s` }}
+    >
+      <div className="flex items-start justify-between mb-3">
+        <span className="font-body text-sdv-orange text-xs font-medium uppercase tracking-wide">{event.sport}</span>
+        <span className={`font-body text-xs font-medium px-2 py-0.5 rounded-sm border ${badgeColors[event.badge] || "text-sdv-muted border-sdv-border"}`}>
+          {event.badge}
+        </span>
+      </div>
+      <h3 className="font-display font-semibold text-white text-lg leading-tight mb-4 group-hover:text-sdv-red transition-colors">
+        {event.title}
+      </h3>
+      <div className="space-y-2 mb-4">
+        <div className="flex items-center gap-2 text-sdv-muted text-sm font-body">
+          <Icon name="Calendar" size={13} className="text-sdv-border shrink-0" />
+          {event.date}
+        </div>
+        <div className="flex items-center gap-2 text-sdv-muted text-sm font-body">
+          <Icon name="MapPin" size={13} className="text-sdv-border shrink-0" />
+          {event.place}
+        </div>
+        <div className="flex items-center gap-2 text-sdv-muted text-sm font-body">
+          <Icon name="Users" size={13} className="text-sdv-border shrink-0" />
+          {event.age} · {event.level}
+        </div>
+      </div>
+      <button className="w-full bg-sdv-surface border border-sdv-border hover:border-sdv-red hover:bg-sdv-red/5 transition-all py-2 font-display text-xs font-medium text-sdv-light uppercase tracking-wider rounded-sm">
+        Подать заявку
+      </button>
+    </div>
+  );
+}
+
+function SectionCard({ section, delay }: { section: typeof SECTIONS[0]; delay: number }) {
+  return (
+    <div
+      className="bg-sdv-card border border-sdv-border rounded-sm p-5 cursor-pointer group transition-all duration-300 hover:-translate-y-1 hover:border-sdv-red/30"
+      style={{ animationDelay: `${delay}s` }}
+    >
+      <div className="flex items-start gap-4 mb-4">
+        <div className="w-12 h-12 bg-sdv-red/10 border border-sdv-red/20 rounded-sm flex items-center justify-center shrink-0">
+          <Icon name={section.icon as "Zap"} size={22} className="text-sdv-red" fallback="Activity" />
+        </div>
+        <div>
+          <h3 className="font-display font-semibold text-white text-lg leading-tight group-hover:text-sdv-red transition-colors">
+            {section.sport}
+          </h3>
+          <p className="font-body text-sdv-muted text-sm mt-0.5">{section.trainer}</p>
+        </div>
+      </div>
+      <div className="space-y-2 mb-4">
+        <div className="flex items-center gap-2 text-sdv-muted text-sm font-body">
+          <Icon name="Clock" size={13} className="text-sdv-border shrink-0" />
+          {section.schedule}
+        </div>
+        <div className="flex items-center gap-2 text-sdv-muted text-sm font-body">
+          <Icon name="Users" size={13} className="text-sdv-border shrink-0" />
+          {section.age} · {section.level}
+        </div>
+      </div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <div className={`w-2 h-2 rounded-full ${section.slots <= 5 ? "bg-sdv-orange" : "bg-green-400"}`} />
+          <span className="font-body text-xs text-sdv-muted">{section.slots} мест свободно</span>
+        </div>
+        <button className="bg-sdv-red hover:bg-sdv-orange transition-colors px-4 py-1.5 font-display text-xs font-medium text-white uppercase tracking-wider rounded-sm">
+          Записаться
+        </button>
       </div>
     </div>
   );
-};
+}
 
-export default Index;
+function TrainerCard({ trainer, delay }: { trainer: typeof TRAINERS[0]; delay: number }) {
+  const initials = trainer.name.split(" ").map(n => n[0]).join("").slice(0, 2);
+  return (
+    <div
+      className="bg-sdv-card border border-sdv-border rounded-sm p-6 transition-all duration-300 hover:-translate-y-1 hover:border-sdv-red/30 flex gap-5"
+      style={{ animationDelay: `${delay}s` }}
+    >
+      <div className="w-16 h-16 rounded-sm flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, #E8311A, #FF6B2C)" }}>
+        <span className="font-display font-bold text-white text-xl">{initials}</span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <h3 className="font-display font-bold text-white text-xl">{trainer.name}</h3>
+        <p className="font-body text-sdv-orange text-sm mt-0.5">{trainer.sport}</p>
+        <p className="font-body text-sdv-muted text-sm mt-1">{trainer.rank}</p>
+        <div className="flex gap-6 mt-4">
+          <div>
+            <div className="font-display font-bold text-white text-2xl">{trainer.exp}</div>
+            <div className="font-body text-sdv-muted text-xs uppercase tracking-wide">Стаж</div>
+          </div>
+          <div>
+            <div className="font-display font-bold text-white text-2xl">{trainer.pupils}</div>
+            <div className="font-body text-sdv-muted text-xs uppercase tracking-wide">Воспитанников</div>
+          </div>
+          <div>
+            <div className="font-display font-bold text-sdv-red text-2xl">{trainer.wins}</div>
+            <div className="font-body text-sdv-muted text-xs uppercase tracking-wide">Побед</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="col-span-3 py-20 text-center">
+      <Icon name="SearchX" size={40} className="text-sdv-border mx-auto mb-4" />
+      <p className="font-display text-sdv-muted text-lg">Ничего не найдено</p>
+      <p className="font-body text-sdv-muted/60 text-sm mt-1">Попробуйте изменить фильтры</p>
+    </div>
+  );
+}
