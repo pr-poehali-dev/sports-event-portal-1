@@ -78,7 +78,14 @@ export default function Index() {
         body: JSON.stringify({ query: searchQuery }),
       });
       const data = await res.json();
-      setSearchResult(data);
+      setSearchResult({
+        answer: data.answer || "Результаты поиска",
+        events: Array.isArray(data.events) ? data.events : [],
+        sections: Array.isArray(data.sections) ? data.sections : [],
+        trainers: Array.isArray(data.trainers) ? data.trainers : [],
+      });
+    } catch {
+      setSearchResult({ answer: "Не удалось выполнить поиск. Попробуйте позже.", events: [], sections: [], trainers: [] });
     } finally {
       setSearchLoading(false);
     }
@@ -475,7 +482,14 @@ export default function Index() {
                           body: JSON.stringify({ query: hint }),
                         });
                         const data = await res.json();
-                        setSearchResult(data);
+                        setSearchResult({
+                          answer: data.answer || "Результаты поиска",
+                          events: Array.isArray(data.events) ? data.events : [],
+                          sections: Array.isArray(data.sections) ? data.sections : [],
+                          trainers: Array.isArray(data.trainers) ? data.trainers : [],
+                        });
+                      } catch {
+                        setSearchResult({ answer: "Не удалось выполнить поиск. Попробуйте позже.", events: [], sections: [], trainers: [] });
                       } finally {
                         setSearchLoading(false);
                       }

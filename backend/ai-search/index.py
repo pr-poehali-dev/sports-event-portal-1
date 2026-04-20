@@ -1,6 +1,7 @@
 import json
 import os
 import urllib.request
+import urllib.error
 
 CATALOG = {
     "events": [
@@ -77,8 +78,16 @@ def handler(event: dict, context) -> dict:
         }
     )
 
-    with urllib.request.urlopen(req, timeout=15) as resp:
-        result = json.loads(resp.read())
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            result = json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8")
+        return {
+            "statusCode": 502,
+            "headers": {**CORS_HEADERS, "Content-Type": "application/json"},
+            "body": json.dumps({"error": f"OpenAI HTTP {e.code}", "detail": error_body}, ensure_ascii=False)
+        }
 
     content = result["choices"][0]["message"]["content"]
     parsed = json.loads(content)
